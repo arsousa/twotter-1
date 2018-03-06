@@ -10,19 +10,25 @@ describe 'global post page', js: true do
   let!(:alices_post) { create(:post, user: alice, body: "Hi, I'm Alice!") }
   let!(:bobs_post) { create(:post, user: bob, body: "And I'm Bob!") }
 
+  subject(:global_page) { PageObjects::GlobalPage.new }
+
   specify 'it lists all posts by all users' do
-    @page = PageObjects::GlobalPage.new
-    @page.load
-    expect(@page).to have_posts_section
+    global_page.load
 
-    expect(@page.posts_section).to have_posts
+    expect(global_page).to have_posts_section
 
-    expect(@page.posts_section).to have_css 'article.post',
-      id: "post_#{alices_post.id}",
-      text: "Hi, I'm Alice!"
+    expect(global_page.posts_section).to have_posts(count: 2)
 
-    expect(@page.posts_section).to have_css 'article.post',
-      id: "post_#{bobs_post.id}",
-      text: "And I'm Bob!"
+    # Bob's post is the newest, so it should be first...
+    global_page.posts_section.posts.first.tap do |post|
+      expect(post.body).to have_text(bobs_post.body)
+      expect(post.meta).to have_text(bob.full_name)
+    end
+
+    # ...followed by Alice's post.
+    global_page.posts_section.posts.second.tap do |post|
+      expect(post.body).to have_text(alices_post.body)
+      expect(post.meta).to have_text(alice.full_name)
+    end
   end
 end
